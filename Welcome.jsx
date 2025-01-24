@@ -1,5 +1,4 @@
 import { useState,useContext,useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPenToSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
@@ -10,17 +9,25 @@ function Welcome() {
   const [newPost, setNewPost] = useState('');
   const [edit,setEdit] = useState(null);
   const [editContent,setEditContent] = useState('')
-  const navigate = useNavigate();
+
  const { username } = useContext(UserContext);
  const { posts, setPosts } = useContext(PostsContext);
+ const [errorMessage, setErrorMessage] = useState("");
+ const [avatarUrl, setAvatarUrl] = useState('');
+
+ 
 
 axios.defaults.withCredentials = true;
+
+
+
 
 
 const fetchItems = async () =>{
   try{
     const response = await axios.get('http://localhost:3001/posts');
     console.log(response.data.posts);
+    // console.log(username)
   setPosts(response.data.posts)
   }
   catch(error){
@@ -37,19 +44,17 @@ useEffect(() => {
 
 const handleSubmit = (e) => {
   e.preventDefault();
+  setErrorMessage("");
 
   if (!newPost.trim()) {
     console.error('Post content is empty.');
     return;
   }
-
-  if (!username) {
-    console.log(username);
-    
-    console.error('Username is missing. Please ensure the user is logged in.');
-    return;
+  if (!username || username.toLowerCase() === 'guest') {
+    setErrorMessage("You must be logged in to create a post. But you can check out other posts!");
+      return;
   }
-
+  
   axios
     .post('http://localhost:3001/posts', { content: newPost, username })
     .then((response) => {
@@ -99,7 +104,13 @@ const handleDelete = (id) => {
       console.error('Error deleting post:', err);
     });
 };
-
+// Loading The Picture
+useEffect(() => {
+  if (username) {
+    const url = `https://robohash.org/${username}`;
+    setAvatarUrl(url);
+  }
+}, [username]);
 
   return (
   
@@ -128,14 +139,19 @@ const handleDelete = (id) => {
         placeholder="What is on your mind ?..."
         value={newPost}
         onChange={(e) => setNewPost(e.target.value)}
+     
       ></textarea>
       <button
       type='button'
         onClick={handleSubmit}
+       
         className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700"
       >
         Post
       </button>
+      {errorMessage && (
+            <p className="mt-2 text-red-500">{errorMessage}</p>
+          )}
       </div>
       <div>
       <section className="relative isolate overflow-hidden bg-white px-6 py-24 sm:py-32 lg:px-8">
@@ -158,6 +174,7 @@ const handleDelete = (id) => {
               {p.id === edit?(
                 <>
                 <textarea type ='text'
+                 className="w-full p-2 border rounded"
                 value={editContent}
                 onChange={(e)=>setEditContent(e.target.value)} 
                 rows='4'
@@ -169,20 +186,44 @@ const handleDelete = (id) => {
                 </>
               ):(
                 <>
-            <p className='content'>{p.content}</p>
-            <div key={p.id}>
-                <div>By {p.username}</div>
-                <div className='icon'>{new Date(p.created_at).toLocaleString()}
-               <div ><FontAwesomeIcon icon={faPenToSquare}  className='item' onClick={()=>handleEdit(p.id,p.content)}/>
-                <FontAwesomeIcon icon={faTrash}  onClick={()=>handleDelete(p.id)} className='text-red-500'/>
-                </div>
-                </div>
-                </div>
-                </>
+            <ul>
+            <li key={p.id} className="bg-white p-6 rounded-lg shadow-lg mb-6">
+         <p className="pcontent">{p.content}</p>
+        <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+         <div className="mr-4">
+            <img
+              src={avatarUrl}
+              alt="user Avatar"
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          </div>
+          <div>
+            <p className="font-semibold text-lg">{p.username}</p>
+            <p className="text-sm text-gray-500">{new Date(p.created_at).toLocaleString()}</p>
+          </div>
+        </div>
+         <div>
+          <FontAwesomeIcon
+            icon={faPenToSquare}
+            className="cursor-pointer mr-4 text-blue-500"
+            onClick={() => handleEdit(p.id, p.content)}
+          />
+          <FontAwesomeIcon
+            icon={faTrash}
+            className="cursor-pointer text-red-500"
+            onClick={() => handleDelete(p.id)}
+          />
+        </div>
+      </div>
+  </li>
+  </ul>
+   </>
               )}
            </li>
             ))}
            </ul>
+           
               </div>
             </blockquote>
            </figure>

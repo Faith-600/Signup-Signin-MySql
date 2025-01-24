@@ -3,51 +3,64 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import axios from 'axios';
-import { UserContext } from '../../App';
+import { PostsContext, UserContext } from '../../App';
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const {username} = useContext(UserContext)
-    const displayName = typeof username === 'string' ? username : 'Guest';
+  const {username,setUsername} = useContext(UserContext)
+   const {posts,setPosts} =useContext(PostsContext)
   
 
-  const handleLogout = () => {
-    axios
-      .post('http://localhost:3001/logout')
-      .then((res) => {
-        if (res.status === 200) {
-          navigate('/'); // Redirect to the login page after logout
-        }
-      })
-      .catch((err) => console.error(err));
-  };
-
+    const handleLogout = () => {
+      axios
+        .post('http://localhost:3001/logout')
+        .then((res) => {
+          if (res.status === 200) {
+            setUsername(null);  
+            sessionStorage.clear(); 
+            setPosts([])
+            navigate('/'); 
+          }
+        })
+        .catch((err) => console.error(err));
+    };
+    
   
   const navigation = [
     { name: 'Thoughts', href: '/thoughts' },
-    { name: 'Features', href: '/features' },
+    { name: 'Message', href: '/message' },
     { name: 'Marketplace', href: '/marketplace' },
     { name: 'About', href: '/about' },
   ];
 
+  //  UNIQUE USER COLOR
+  const getUserColor = (username) => {
+    if (!username) return "#4A5568"; // Default color for "Guest"
+    const hash = username.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const colors = ["#E53E3E", "#3182CE", "#48BB78", "#D69E2E", "#805AD5"];
+    return colors[hash % colors.length];
+  };
+
+
   return (
     <header className="absolute inset-x-0 top-0 z-50">
       <div className="absolute top-0 right-0 p-4">
-        <span className="text-lg font-semibold text-gray-700">
-          Welcome, {displayName?.charAt(0)?.toUpperCase() + displayName?.slice(1)}!
+        <span className="text-lg font-semibold text-gray-700"
+         style={{ color: getUserColor(username) }}>
+          Welcome,{username?.charAt(0)?.toUpperCase() + username?.slice(1)}!
         </span>
       </div>
       <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
         <div className="flex lg:flex-1">
-          <Link to="/" className="-m-1.5 p-1.5">
+          <div className="-m-1.5 p-1.5">
             <span className="sr-only">Your Company</span>
             <img
               src="https://img.freepik.com/premium-vector/blue-waves-simple-logo-design_302761-1052.jpg?w=996"
               alt="Blue Waves Logo"
               className="h-20"
             />
-          </Link>
+          </div>
         </div>
         <div className="flex lg:hidden">
           <button
@@ -71,7 +84,7 @@ function Header() {
         </div>
         <button
           onClick={handleLogout}
-          className="hidden lg:flex lg:flex-1 lg:justify-end text-sm font-semibold text-gray-900"
+          className="hidden lg:flex lg:flex-1 lg:justify-end text-sm font-semibold text-red-400"
         >
           Log out <span aria-hidden="true">&rarr;</span>
         </button>

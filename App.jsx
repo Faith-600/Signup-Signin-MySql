@@ -8,55 +8,98 @@ import Error from './assets/Components/Error';
 import Chats from './assets/Components/Chats';
 import Layout from './assets/Components/Layout';
 import axios from 'axios';
+import Market from './Redux/Market';
+import Checkout from './Redux/Checkout';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import ErrorFallback from './assets/Components/ErrorFallBack';
+import {ErrorBoundary} from 'react-error-boundary'
+import Message from './assets/ChatApp/Message'
+import ItemsDetail from './Redux/ItemsDetail';
 
 export const UserContext = React.createContext()
 export const PostsContext = React.createContext();
 
+
 function App() {
   const [posts, setPosts] = useState([]);
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(null);
+  const queryClient =new QueryClient();
+  const [loading, setLoading] = useState(true);
+
+ 
+
   useEffect(() => {
     axios
-      .get('http://localhost:3001')
+      .get('http://localhost:3001', { withCredentials: true })
       .then((res) => {
         if (res.data.valid) {
           setUsername(res.data.name);
-        } 
+          localStorage.setItem('username', res.data.name);
+        } else {
+          setUsername('Guest');
+          localStorage.removeItem('username');
+        }
       })
-      .catch((err) => console.error(err));
-  }, []);
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
+  }, [username]);
+  
+  if (loading) {
+    return <p className='Loading'>Loading...</p>; 
+  }
   
 
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <>
-   
-    <Route index element={<SignIn/>}/>
-    <Route path='/login' element={<Signup/>}/> 
 
-    <Route element={<Layout posts={posts} setPosts={setPosts} />}> 
-   <Route path='/welcome' element={
-    <Welcome posts={posts} setPosts={setPosts}/>}/> 
-    <Route path='/thoughts' element={<Chats posts={posts} />}/>
-    </Route>
-   <Route path='*' element={<Error/>}/> 
-   
-  </>
- )
-)
+  const router = createBrowserRouter(
+    createRoutesFromElements(
+      <>
+        <Route index element={<SignIn />} errorElement={<ErrorFallback />} />
+        <Route path="/login" element={<Signup />} errorElement={<ErrorFallback />} />
+        <Route
+          element={<Layout posts={posts} setPosts={setPosts} />}
+          errorElement={<ErrorFallback />}
+         >
+          <Route
+            path="/welcome"
+            element={<Welcome posts={posts} setPosts={setPosts} />}
+            errorElement={<ErrorFallback />}
+          />
+          <Route
+            path="/thoughts"
+            element={<Chats posts={posts} />}
+            errorElement={<ErrorFallback />}
+          />
+          <Route path="/marketplace" element={<Market />} errorElement={<ErrorFallback />} />
+          <Route path="/marketplace/product/:id" element={<ItemsDetail />} />
+          <Route path="/checkout" element={<Checkout />} errorElement={<ErrorFallback />} />
+          <Route path="/message" element={<Message />} errorElement={<ErrorFallback />} />
+        </Route>
+        <Route path='*' element={<Error />} />
+      </>
+    )
+  );
+  
 
 
 
   return (
     <>
-  
-    <UserContext.Provider value={{username,setUsername}}>
+   <ErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onReset={() => {
+        console.log("Error boundary reset");
+      }}
+    >
+      <UserContext.Provider value={{username,setUsername}}>
+    <QueryClientProvider client={queryClient}>
     <PostsContext.Provider value={{ posts, setPosts }}>
       <RouterProvider router={router}/>
      </PostsContext.Provider>
-       </UserContext.Provider>
+      </QueryClientProvider>
+      </UserContext.Provider>
+      </ErrorBoundary>
      </> 
-
+    
   )
 }
 
