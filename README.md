@@ -1,5 +1,5 @@
 Signup-Signin-MySQL Project
-This is a full-stack application built using React for the frontend and Express with MySQL for the backend. The project features user authentication, e-commerce functionality, the ability to comment on posts, a simple chat app, and a direct login feature for Guest Userd with specific restrictions.
+This is a full-stack application built using React for the frontend and Express with MySQL for the backend. The project features user authentication, e-commerce functionality, the ability to comment on posts, a simple chat app, and a direct login feature for Guest Users with specific restrictions.
 
 Features
 User Authentication:
